@@ -57,12 +57,16 @@ describe("ManaPool", function () {
     );
     manaPool.deployed();
 
-    await mint([adminAddress, aliceAddress, bobAddress], 1000);
+    await mint(
+      [adminAddress, aliceAddress, bobAddress, manaPool.address],
+      1000
+    );
     await xMana._addMinter(manaPool.address); // Set staking pool contract as a minter on xMana
 
     expect(await balanceOf(adminAddress, mana)).to.equal(toBNValue(1000));
     expect(await balanceOf(aliceAddress, mana)).to.equal(toBNValue(1000));
     expect(await balanceOf(bobAddress, mana)).to.equal(toBNValue(1000));
+    expect(await balanceOf(manaPool.address, mana)).to.equal(toBNValue(1000));
     expect(await xMana.isMinter(manaPool.address)).to.equal(true);
   });
 
@@ -103,12 +107,10 @@ describe("ManaPool", function () {
     return amount.mul(xManaTotalShares).div(manaPoolAmount);
   };
 
-  const calcReward = (
-    amount: BigNumber,
-    xManaTotalShares: BigNumber,
-    manaPoolAmount: BigNumber
-  ): BigNumber => {
-    console.log(amount, xManaTotalShares, manaPoolAmount);
+  const calcReward = async (amount: BigNumber): Promise<BigNumber> => {
+    const xManaTotalShares = await xMana.totalSupply();
+    const manaPoolAmount = await balanceOf(manaPool.address, mana);
+
     return amount.mul(manaPoolAmount).div(xManaTotalShares);
   };
 
@@ -153,12 +155,16 @@ describe("ManaPool", function () {
       let staker: Signer = alice;
       let stakerAddress = aliceAddress;
       let stakeAmount = toBNValue(100);
+
       let stakerInitialBalance = await balanceOf(stakerAddress, mana);
+      let manaPoolInitialBalance = await balanceOf(manaPool.address, mana);
 
       await stake(FLEXIBLE, stakeAmount, staker);
       expect(await balanceOf(stakerAddress, xMana)).to.equal(stakeAmount); // Pool is empty so xMana to Mana is 1:1
 
-      expect(await balanceOf(manaPool.address, mana)).to.equal(stakeAmount);
+      expect(await balanceOf(manaPool.address, mana)).to.equal(
+        manaPoolInitialBalance.add(stakeAmount)
+      );
       expect(await balanceOf(stakerAddress, mana)).to.equal(
         stakerInitialBalance.sub(stakeAmount)
       );
@@ -168,6 +174,7 @@ describe("ManaPool", function () {
       stakerAddress = bobAddress;
       stakeAmount = toBNValue(350);
       stakerInitialBalance = await balanceOf(stakerAddress, mana);
+      manaPoolInitialBalance = await balanceOf(manaPool.address, mana);
 
       await stake(LOCKED, stakeAmount, staker);
       const xTokens = calc(
@@ -179,6 +186,9 @@ describe("ManaPool", function () {
       expect(await balanceOf(stakerAddress, xMana)).to.equal(xTokens);
       expect(await balanceOf(stakerAddress, mana)).to.equal(
         stakerInitialBalance.sub(stakeAmount)
+      );
+      expect(await balanceOf(manaPool.address, mana)).to.equal(
+        manaPoolInitialBalance.add(stakeAmount)
       );
     });
   });
@@ -206,18 +216,23 @@ describe("ManaPool", function () {
 
       await timeTravel(259200); // increase time to three days
 
-      let reward = calcReward(
+      let expectedCashout = await calcReward(stakeAmount);
+      const stakeInfo = await manaPool.flexiblePool(stakerAddress);
+      
+      let [unstakedMana, realReward] = await manaPool.rem(
+        expectedCashout,
         stakeAmount,
-        await xMana.totalSupply(),
-        await balanceOf(manaPool.address, mana)
+        stakeInfo.xManaTokens,
+        stakeInfo.manaTokens
       );
-      const fee = calcFee(reward);
-      reward = reward.sub(fee);
+
+      const fee = calcFee(realReward);
+      realReward = realReward.sub(fee);
 
       await unStake(FLEXIBLE, stakeAmount, staker);
 
       let stakerFinalManaBalanceAfterUnstake =
-        stakerInitialManaBalanceAfterStake.add(reward);
+        stakerInitialManaBalanceAfterStake.add(realReward).add(unstakedMana);
 
       expect(await balanceOf(stakerAddress, xMana)).to.equal(
         stakerInitialxManaBalanceAfterStake.sub(stakeAmount)
@@ -230,6 +245,7 @@ describe("ManaPool", function () {
       expect(await xMana.totalSupply()).to.equal(
         xManaTotalsupplyAfterStake.sub(stakeAmount)
       );
+      console.log("VIEW: ", await balanceOf(stakerAddress, mana));
     });
   });
 });
