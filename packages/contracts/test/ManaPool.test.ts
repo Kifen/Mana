@@ -4,13 +4,13 @@ import { ManaPool, ManaPool__factory, Mana, Mana__factory } from "../typechain";
 import { BigNumber, Contract, Signer } from "ethers";
 
 describe("ManaPool", function () {
-  let admin: Signer
-  let alice: Signer
+  let admin: Signer;
+  let alice: Signer;
   let bob: Signer;
 
-  let adminAddress: string
-  let aliceAddress: string
-  let bobAddress: string
+  let adminAddress: string;
+  let aliceAddress: string;
+  let bobAddress: string;
 
   let mana: Mana;
   let xMana: Mana;
@@ -23,7 +23,7 @@ describe("ManaPool", function () {
     [admin, alice, bob] = await ethers.getSigners();
     adminAddress = await admin.getAddress();
     aliceAddress = await alice.getAddress();
-    bobAddress = await bob.getAddress()
+    bobAddress = await bob.getAddress();
 
     // Deploy Mana Token
     const ManaFactory = (await ethers.getContractFactory(
@@ -54,12 +54,12 @@ describe("ManaPool", function () {
     );
     manaPool.deployed();
 
-    await mint([adminAddress, aliceAddress, bobAddress], 1000)
-    await xMana._addMinter(manaPool.address); // Set staking pool contract as a minter on xMana 
+    await mint([adminAddress, aliceAddress, bobAddress], 1000);
+    await xMana._addMinter(manaPool.address); // Set staking pool contract as a minter on xMana
 
-    expect(await balanceOf(adminAddress, mana)).to.equal(toBNValue(1000))
-    expect(await balanceOf(aliceAddress, mana)).to.equal(toBNValue(1000))
-    expect(await balanceOf(bobAddress, mana)).to.equal(toBNValue(1000))
+    expect(await balanceOf(adminAddress, mana)).to.equal(toBNValue(1000));
+    expect(await balanceOf(aliceAddress, mana)).to.equal(toBNValue(1000));
+    expect(await balanceOf(bobAddress, mana)).to.equal(toBNValue(1000));
     expect(await xMana.isMinter(manaPool.address)).to.equal(true);
   });
 
@@ -69,13 +69,21 @@ describe("ManaPool", function () {
     }
   };
 
-  const balanceOf = async (address: string, contract: Contract): Promise<BigNumber> => {
+  const balanceOf = async (
+    address: string,
+    contract: Contract
+  ): Promise<BigNumber> => {
     return await contract.balanceOf(address);
-  }
+  };
 
-  const approve = async (contract: Contract, amount: BigNumber, spender: string, signer: Signer) => {
+  const approve = async (
+    contract: Contract,
+    amount: BigNumber,
+    spender: string,
+    signer: Signer
+  ) => {
     await contract.connect(signer).approve(spender, amount);
-  }
+  };
 
   const toBNValue = (value: number, scale = 18) => {
     let decimals = BigNumber.from(scale);
@@ -84,19 +92,60 @@ describe("ManaPool", function () {
     return BigNumber.from(value).mul(decimals);
   };
 
+  const calc = (
+    amount: BigNumber,
+    xManaTotalShares: BigNumber,
+    manaPoolAmount: BigNumber
+  ): BigNumber => {
+    return amount.mul(xManaTotalShares).div(manaPoolAmount);
+  };
+
+  const stake = async (pool: string, amount: BigNumber, signer: Signer) => {
+    await approve(mana, amount, manaPool.address, signer);
+
+    switch (pool) {
+      case "FLEXIBLE":
+        await manaPool.connect(signer).stakeInFlexiblePool(amount);
+        break;
+      case "LOCKED":
+        await manaPool.connect(signer).stakeInLockedPool(amount);
+        break;
+    }
+  };
+
   describe("Stake", () => {
     it("stake in flexible pool", async () => {
-      const staker: Signer = alice
-      const stakerAddress = aliceAddress
-      const stakeAmount = toBNValue(100);
-      const stakerInitialBalance = await balanceOf(stakerAddress, mana)
+      // Stake in flexible pool
+      let staker: Signer = alice;
+      let stakerAddress = aliceAddress;
+      let stakeAmount = toBNValue(100);
+      let stakerInitialBalance = await balanceOf(stakerAddress, mana);
 
-      await approve(mana, stakeAmount, manaPool.address, staker)
-      await manaPool.connect(staker).stakeInFlexiblePool(stakeAmount)
+      await stake("FLEXIBLE", stakeAmount, staker);
+      expect(await balanceOf(stakerAddress, xMana)).to.equal(stakeAmount); // Pool is empty so xMana to Mana is 1:1
 
-      expect(await balanceOf(stakerAddress, xMana)).to.equal(stakeAmount) // Pool is empty so xMana to Mana is 1:1
-      expect(await balanceOf(manaPool.address, mana)).to.equal(stakeAmount)
-      expect(await balanceOf(stakerAddress, mana)).to.equal(stakerInitialBalance.sub(stakeAmount))
+      expect(await balanceOf(manaPool.address, mana)).to.equal(stakeAmount);
+      expect(await balanceOf(stakerAddress, mana)).to.equal(
+        stakerInitialBalance.sub(stakeAmount)
+      );
+
+      // Stake in locked pool
+      staker = bob;
+      stakerAddress = bobAddress;
+      stakeAmount = toBNValue(350);
+      stakerInitialBalance = await balanceOf(stakerAddress, mana);
+
+      await stake("LOCKED", stakeAmount, staker);
+      const xTokens = calc(
+        stakeAmount,
+        await xMana.totalSupply(),
+        await balanceOf(manaPool.address, mana)
+      );
+
+      expect(await balanceOf(stakerAddress, xMana)).to.equal(xTokens);
+      expect(await balanceOf(stakerAddress, mana)).to.equal(
+        stakerInitialBalance.sub(stakeAmount)
+      );
     });
   });
 });
