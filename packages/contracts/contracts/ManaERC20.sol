@@ -11,7 +11,7 @@ contract Mana is ERC20, AccessControl {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER");
 
 
-  constructor() ERC20("Mana", "MANA") {
+  constructor(string memory name, string memory symbol) ERC20(name, symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
   }
@@ -24,7 +24,12 @@ contract Mana is ERC20, AccessControl {
     _revokeRole(MINTER_ROLE, _minter);
   }
 
-  function mint(address _account, uint256 _amount) external onlyRole(MINTER_ROLE) {
+  function mint(address _account, uint256 _amount) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(MINTER_ROLE, msg.sender), "Mana: unauthorized");
     _mint(_account, _amount);
+  }
+
+  function burn(address _account, uint256 _amount) external onlyRole(MINTER_ROLE) {
+     _burn(_account, _amount);
   }
 }
