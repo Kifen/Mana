@@ -7,6 +7,7 @@ describe("ManaPool", function () {
   let admin: Signer;
   let alice: Signer;
   let bob: Signer;
+  let provider;
 
   let adminAddress: string;
   let aliceAddress: string;
@@ -18,9 +19,11 @@ describe("ManaPool", function () {
 
   const lockTime = 604800; // 7 days (7 * 24 * 60 * 60)
   const fee = 5; // 5 percent
+  const FLEXIBLE = "FLEXIBLE";
+  const LOCKED = "LOCKED";
 
   beforeEach(async () => {
-    [admin, alice, bob] = await ethers.getSigners();
+    [admin, alice, bob, provider] = await ethers.getSigners();
     adminAddress = await admin.getAddress();
     aliceAddress = await alice.getAddress();
     bobAddress = await bob.getAddress();
@@ -100,15 +103,46 @@ describe("ManaPool", function () {
     return amount.mul(xManaTotalShares).div(manaPoolAmount);
   };
 
+  const calcReward = (
+    amount: BigNumber,
+    xManaTotalShares: BigNumber,
+    manaPoolAmount: BigNumber
+  ): BigNumber => {
+    console.log(amount, xManaTotalShares, manaPoolAmount);
+    return amount.mul(manaPoolAmount).div(xManaTotalShares);
+  };
+
+  const calcFee = (reward: BigNumber): BigNumber => {
+    return reward.mul(fee).div(100);
+  };
+
+  const timeTravel = async (t: number) => {
+    await provider.provider.send("evm_increaseTime", [t]);
+    await provider.provider.send("evm_mine");
+  };
+
   const stake = async (pool: string, amount: BigNumber, signer: Signer) => {
     await approve(mana, amount, manaPool.address, signer);
 
     switch (pool) {
-      case "FLEXIBLE":
+      case FLEXIBLE:
         await manaPool.connect(signer).stakeInFlexiblePool(amount);
         break;
-      case "LOCKED":
+      case LOCKED:
         await manaPool.connect(signer).stakeInLockedPool(amount);
+        break;
+    }
+  };
+
+  const unStake = async (pool: string, amount: BigNumber, signer: Signer) => {
+    await approve(xMana, amount, manaPool.address, signer);
+
+    switch (pool) {
+      case FLEXIBLE:
+        await manaPool.connect(signer).unstakeFlexiblePool(amount);
+        break;
+      case LOCKED:
+        await manaPool.connect(signer).unstakeFlexiblePool(amount);
         break;
     }
   };
@@ -121,7 +155,7 @@ describe("ManaPool", function () {
       let stakeAmount = toBNValue(100);
       let stakerInitialBalance = await balanceOf(stakerAddress, mana);
 
-      await stake("FLEXIBLE", stakeAmount, staker);
+      await stake(FLEXIBLE, stakeAmount, staker);
       expect(await balanceOf(stakerAddress, xMana)).to.equal(stakeAmount); // Pool is empty so xMana to Mana is 1:1
 
       expect(await balanceOf(manaPool.address, mana)).to.equal(stakeAmount);
@@ -135,7 +169,7 @@ describe("ManaPool", function () {
       stakeAmount = toBNValue(350);
       stakerInitialBalance = await balanceOf(stakerAddress, mana);
 
-      await stake("LOCKED", stakeAmount, staker);
+      await stake(LOCKED, stakeAmount, staker);
       const xTokens = calc(
         stakeAmount,
         await xMana.totalSupply(),
@@ -145,6 +179,56 @@ describe("ManaPool", function () {
       expect(await balanceOf(stakerAddress, xMana)).to.equal(xTokens);
       expect(await balanceOf(stakerAddress, mana)).to.equal(
         stakerInitialBalance.sub(stakeAmount)
+      );
+    });
+  });
+
+  describe("Unstake", () => {
+    it("should unstake from flexible pool", async () => {
+      // Stake in flexible pool
+      let staker: Signer = alice;
+      let stakerAddress = aliceAddress;
+      let stakeAmount = toBNValue(100);
+
+      await stake(FLEXIBLE, stakeAmount, staker);
+
+      let stakerInitialxManaBalanceAfterStake = await balanceOf(
+        stakerAddress,
+        xMana
+      );
+
+      let stakerInitialManaBalanceAfterStake = await balanceOf(
+        stakerAddress,
+        mana
+      );
+
+      let xManaTotalsupplyAfterStake = await xMana.totalSupply();
+
+      await timeTravel(259200); // increase time to three days
+
+      let reward = calcReward(
+        stakeAmount,
+        await xMana.totalSupply(),
+        await balanceOf(manaPool.address, mana)
+      );
+      const fee = calcFee(reward);
+      reward = reward.sub(fee);
+
+      await unStake(FLEXIBLE, stakeAmount, staker);
+
+      let stakerFinalManaBalanceAfterUnstake =
+        stakerInitialManaBalanceAfterStake.add(reward);
+
+      expect(await balanceOf(stakerAddress, xMana)).to.equal(
+        stakerInitialxManaBalanceAfterStake.sub(stakeAmount)
+      );
+
+      expect(await balanceOf(stakerAddress, mana)).to.equal(
+        stakerFinalManaBalanceAfterUnstake
+      );
+
+      expect(await xMana.totalSupply()).to.equal(
+        xManaTotalsupplyAfterStake.sub(stakeAmount)
       );
     });
   });

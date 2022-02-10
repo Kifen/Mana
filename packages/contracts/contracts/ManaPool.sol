@@ -40,8 +40,8 @@ contract ManaPool is Ownable{
 
     event NewLockTime(uint256 indexed oldLockTime, uint256 indexed newLockTime);
 
-  modifier checkAllowance(uint256 _stakeAmount) {
-    require(mana.allowance(msg.sender, address(this)) >= _stakeAmount, "ManaPool: insufficinet allowance");
+  modifier checkAllowance(uint256 _stakeAmount, IERC20 _ierc20) {
+    require(_ierc20.allowance(msg.sender, address(this)) >= _stakeAmount, "ManaPool: insufficinet allowance");
     _;
   }
 
@@ -57,13 +57,13 @@ contract ManaPool is Ownable{
     xMana = _xMana;
   }
 
-  function stakeInFlexiblePool(uint256 _stakeAmount) external checkAllowance(_stakeAmount) checkBalance(_stakeAmount){
+  function stakeInFlexiblePool(uint256 _stakeAmount) external checkAllowance(_stakeAmount, mana) checkBalance(_stakeAmount){
     _stake(_stakeAmount, msg.sender, PoolType.FLEXIBLE);
 
     emit FlexibleStake(_stakeAmount, msg.sender);
   }
 
-  function stakeInLockedPool(uint256 _stakeAmount) external checkAllowance(_stakeAmount) checkBalance(_stakeAmount) {
+  function stakeInLockedPool(uint256 _stakeAmount) external checkAllowance(_stakeAmount, mana) checkBalance(_stakeAmount) {
     _stake(_stakeAmount, msg.sender, PoolType.LOCKED);
 
     emit LockedStake(_stakeAmount, msg.sender);
@@ -92,7 +92,7 @@ contract ManaPool is Ownable{
     mana.transferFrom(_staker, address(this), _stakeAmount);
   }
 
-  function unstakeFlexiblePool(uint256 _amount) external {
+  function unstakeFlexiblePool(uint256 _amount) external checkAllowance(_amount, xMana){
      StakeInfo memory _stakeInfo = flexiblePool[msg.sender];
     require(_stakeInfo.staked, "ManaPool: no stake");
 
@@ -100,7 +100,7 @@ contract ManaPool is Ownable{
       delete flexiblePool[msg.sender];
   }
 
-  function unstakeLockedPool(uint256 _amount) external {
+  function unstakeLockedPool(uint256 _amount) external checkAllowance(_amount, xMana){
      StakeInfo memory _stakeInfo = lockedPool[msg.sender];
 
     require(_stakeInfo.staked, "ManaPool: no stake");
@@ -113,11 +113,9 @@ contract ManaPool is Ownable{
   function _unstake(uint256 _amount, address _account, uint256 _stakedTime, PoolType _poolType) internal {
     require(xMana.balanceOf(msg.sender) >= _amount, "ManaPool: insufficinet xMana");
 
-    require(xMana.allowance(msg.sender, address(this)) > _amount, "ManaPool: insufficinet allowance");
-
     uint256 xManaTotalSupply = xMana.totalSupply();
     uint256 totalMana = mana.balanceOf(address(this));
-    uint256 reward = _amount.mul(totalMana).div(xManaTotalSupply);
+    uint256 reward = calculateReward(_amount, totalMana,xManaTotalSupply); //_amount.mul(totalMana).div(xManaTotalSupply)
 
     if (PoolType.FLEXIBLE == _poolType && !_fullClaim(_stakedTime)) {
       uint256 fee = reward.mul(fee).div(100);
@@ -150,5 +148,9 @@ contract ManaPool is Ownable{
     lockTime = _newLockTime;
 
     emit NewLockTime(oldLockTime, _newLockTime);
+  }
+
+  function calculateReward(uint256 _amount, uint256 _totalMana, uint256 _xManaTotalSupply) public view returns (uint256) {
+    return _amount.mul(_totalMana).div(_xManaTotalSupply);
   }
 }
