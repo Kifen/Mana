@@ -4,7 +4,7 @@ Mana smart contracts implements a staking pool and an ERC-20 token. This package
 Reference implementations for contracts has been deployed on the BSC testnet
 
 ### ManaPool
-The ManaPool contract defines the staking pool; it supports a flexible and locked pool. Reward mechanics was inspired from [aurory-staking](https://auroryproject.medium.com/aurory-staking-d417dfdc32b5) and [ocked-flexible-aury-staking](https://auroryproject.medium.com/locked-flexible-aury-staking-30b7bacf1a1c).
+The ManaPool contract defines the staking pool; it supports a flexible and locked pool. Reward mechanics was inspired from [aurory-staking](https://auroryproject.medium.com/aurory-staking-d417dfdc32b5) and [locked-flexible-aury-staking](https://auroryproject.medium.com/locked-flexible-aury-staking-30b7bacf1a1c).
 
 ### Mana
 The Mana token is a standard implementation of ERC20
