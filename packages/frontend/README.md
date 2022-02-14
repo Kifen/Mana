@@ -14,9 +14,6 @@ While in frontend package directory run:
 
 Create file `.env.development.local` in project root and add the following:
 
-```
-
-```
 ### Pre-requesites
 - Ensure metamsk is installed
 - Add BSC testnet to metamask; you can use [chainlist](https://chainlist.org/) to add an EVM network to metamask.
