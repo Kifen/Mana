@@ -1,8 +1,0 @@
-{
-  "scripts": {
-    "start-dapp": "cd packages/frontend && npm install && npm run start"
-  },
-  "devDependencies": {
-    "prettier": "^2.3.2"
-  }
-}
