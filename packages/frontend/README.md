@@ -1,7 +1,7 @@
 
 # Mana DAPP
 
-This is a simple Dapp for the Mana staking pool (ManaPool), that enable staking ansd unstaking in. a locked and flexible pool.
+This is a simple Dapp for the Mana staking pool (ManaPool); it enables staking ansd unstaking of Mana tokens in a locked and flexible pool.
 This app runs on the Binance Smart Chain test network
 
 
