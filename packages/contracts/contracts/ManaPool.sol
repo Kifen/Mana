@@ -28,6 +28,7 @@ contract ManaPool is Ownable{
     }
 
     mapping(address => StakeInfo) public flexiblePool;
+    mapping(address => uint256) public rewardsEarned;
     mapping(address => StakeInfo) public lockedPool;
 
     event FlexibleStake(uint256 indexed stakeAmount, address indexed staker);
@@ -82,14 +83,22 @@ contract ManaPool is Ownable{
     }
 
     if (_poolType == PoolType.FLEXIBLE) {
-      uint256 value = flexiblePool[msg.sender].manaTokens;
-      uint256 newStakeAmount = value.add(_stakeAmount);
-      StakeInfo memory _stakeInfo = StakeInfo(newStakeAmount, xManaTokens, _getNow());
+      uint256 currentManaTokens = flexiblePool[msg.sender].manaTokens;
+      uint256 currentxManaTokens = flexiblePool[msg.sender].xManaTokens;
+
+      uint256 newManaTokens = currentManaTokens.add(_stakeAmount);
+      uint256 newxManaTokens = currentxManaTokens.add(xManaTokens);
+
+      StakeInfo memory _stakeInfo = StakeInfo(newManaTokens, newxManaTokens, _getNow());
       flexiblePool[_staker] = _stakeInfo;
     } else {
-      uint256 value = lockedPool[msg.sender].manaTokens;
-      uint256 newStakeAmount = value.add(_stakeAmount);
-      StakeInfo memory _stakeInfo = StakeInfo(newStakeAmount, xManaTokens, _getNow());
+      uint256 currentManaTokens = lockedPool[msg.sender].manaTokens;
+      uint256 currentxManaTokens = lockedPool[msg.sender].xManaTokens;
+
+      uint256 newManaTokens = currentManaTokens.add(_stakeAmount);
+      uint256 newxManaTokens = currentxManaTokens.add(xManaTokens);
+
+      StakeInfo memory _stakeInfo = StakeInfo(newManaTokens, newxManaTokens, _getNow());
       lockedPool[_staker] = _stakeInfo;
     }
 
@@ -101,7 +110,6 @@ contract ManaPool is Ownable{
 
   function unstakeFlexiblePool(uint256 _amount) external checkAllowance(_amount, xMana){
     StakeInfo memory _stakeInfo = flexiblePool[msg.sender];
-
     uint256 unStakedMana = _unstake(_amount, msg.sender, _stakeInfo.stakedTime, PoolType.FLEXIBLE, _stakeInfo);
 
     _stakeInfo = StakeInfo(_stakeInfo.manaTokens.sub(unStakedMana), _stakeInfo.xManaTokens.sub(_amount), _getNow());
@@ -121,13 +129,12 @@ contract ManaPool is Ownable{
   }
 
   function _unstake(uint256 _amount, address _account, uint256 _stakedTime, PoolType _poolType, StakeInfo memory _stakeInfo) internal returns (uint256){
+    require(_stakeInfo.xManaTokens >= _amount, "ManaPool: incorrect xMana");
     require(_stakeInfo.manaTokens > 0, "ManaPool: no stake");
     require(xMana.balanceOf(msg.sender) >= _amount, "ManaPool: insufficinet xMana");
 
     uint256 unStakedMana;
     uint256 realReward;
-    // uint256 xManaTotalSupply = xMana.totalSupply();
-    // uint256 totalMana = mana.balanceOf(address(this));
 
     uint256 reward = calculateReward(_amount); //_amount.mul(totalMana).div(xManaTotalSupply)
     (unStakedMana, realReward) = rem(reward, _amount, _stakeInfo.xManaTokens, _stakeInfo.manaTokens);
@@ -140,6 +147,7 @@ contract ManaPool is Ownable{
     xMana.burn(msg.sender, _amount);
     mana.transfer(msg.sender, reward);
     totalStaked = totalStaked.sub(unStakedMana);
+    rewardsEarned[msg.sender] = rewardsEarned[msg.sender].add(reward);
 
     return unStakedMana;
   }
@@ -150,6 +158,12 @@ contract ManaPool is Ownable{
 
   function _fullClaim(uint256 _stakeTime) internal returns (bool) {
     if (_stakeTime + lockTime >= _getNow()) return false;
+
+    return true;
+  }
+
+  function canUnstake() public view returns (bool) {
+    if (lockedPool[msg.sender].stakedTime + lockTime >= _getNow()) return false;
 
     return true;
   }

@@ -218,7 +218,7 @@ describe("ManaPool", function () {
 
       let expectedCashout = await calcReward(stakeAmount);
       const stakeInfo = await manaPool.flexiblePool(stakerAddress);
-      
+
       let [unstakedMana, realReward] = await manaPool.rem(
         expectedCashout,
         stakeAmount,
@@ -245,7 +245,6 @@ describe("ManaPool", function () {
       expect(await xMana.totalSupply()).to.equal(
         xManaTotalsupplyAfterStake.sub(stakeAmount)
       );
-      console.log("VIEW: ", await balanceOf(stakerAddress, mana));
     });
   });
 });

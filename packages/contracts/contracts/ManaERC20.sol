@@ -20,7 +20,7 @@ contract Mana is ERC20, AccessControl {
     _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
-  function _addMinter(address _newMinter) external onlyRole(DEFAULT_ADMIN_ROLE)  {
+  function _addMinter(address _newMinter) external  onlyRole(DEFAULT_ADMIN_ROLE) {
       grantRole(MINTER_ROLE, _newMinter);
   }
 

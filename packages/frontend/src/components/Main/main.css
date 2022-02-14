@@ -1,0 +1,139 @@
+.main-page {
+  flex-grow: 2;
+  padding-top: 4em;
+  /* display: flex;
+  justify-content: center; */
+}
+
+.main {
+  padding: 2em;
+  border-radius: 18px;
+  /* max-width: 50em;
+  min-width: 40rem; */
+  width: 80%;
+  margin: auto;
+}
+
+.access-box {
+  border: 1px solid #aaa8a8;
+  padding: 2em;
+  border-radius: 18px;
+  max-width: 35em;
+  min-width: 15rem;
+  width: 80%;
+  margin: auto;
+}
+
+.buy-sell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.buy {
+  margin-right: .3em;
+  border-radius: 8px;
+}
+
+.sell {
+  border-radius: 8px;
+}
+
+.sell:hover {
+  border: 1px solid #000;
+}
+
+.buy:hover {
+  border: 1px solid #000;
+}
+
+.top {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 2;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bal {
+  font-size: .8em
+}
+
+.button {
+  margin: 1em auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.submit-btn {
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+.info-span {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 2;
+  justify-content: center;
+  margin: .5em auto;
+}
+
+.borderr {
+  border: 1px solid #000;
+}
+
+.approve-text {
+  display: flex;
+  margin-top: 1em;
+}
+
+.approve-text > span {
+  cursor: pointer;
+  background-color: green;
+  color: #fff;
+  font-size: .8em;
+  margin: auto;
+  padding: .3em .5em;
+  border-radius: 8px;
+}
+
+.balance-div {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 35em;
+  min-width: 15rem;
+  border: 1px solid #aaa8a8;
+  border-radius: 8px;
+  padding: .5em .7em;
+}
+
+.bln {
+  display: flex;
+  flex-direction: row;
+}
+
+.baln {
+  margin-left: auto;
+}
+
+.spin {
+  width: 100px;
+  height: 100px;
+}
+
+.view-tx {
+  text-decoration: none;
+  background-color: green;
+  color: #fff;
+  padding: .8em;
+  border-radius: 8px;
+}
+
+.view-tx:hover {
+  color: #fff;
+  background-color: rgb(6, 99, 6);
+}

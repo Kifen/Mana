@@ -14,13 +14,30 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+  const ManaToken = await deployToken("Mana", "MANA");
+  console.log("ManaToken deployed to:", ManaToken.address);
 
-  await greeter.deployed();
+  const xManaToken = await deployToken("xMana", "xMANA");
+  console.log("xManaToken deployed to:", xManaToken.address);
 
-  console.log("Greeter deployed to:", greeter.address);
+  const ManaPool = await ethers.getContractFactory("ManaPool");
+  const manaPool = await ManaPool.deploy(ManaToken.address, xManaToken.address, 7*24*60*60, 5);
+  await manaPool.deployed()
+  console.log("ManaPool deployed to:", manaPool.address);
+
+  await xManaToken._addMinter(manaPool.address);
+  console.log(`Added ${manaPool.address} as minter to xMana`);
+
+  await ManaToken._addMinter(manaPool.address);
+  console.log(`Added ${manaPool.address} as minter to Mana`);
 }
+
+const deployToken = async (name: string, symbol: string) => {
+  const ManaToken = await ethers.getContractFactory("Mana");
+  const manaToken = await ManaToken.deploy(name, symbol);
+  await manaToken.deployed();
+  return manaToken
+};
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
