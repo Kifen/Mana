@@ -1,46 +1,22 @@
-# Advanced Sample Hardhat Project
+## Mana
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+Mana smart contracts implements a staking pool and an ERC-20 token. This package uses the hardhat framework for contract development and deployment.
+Reference implementations for contracts has been deployed on the BSC testnet
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+### ManaPool
+The ManaPool contract defines the staking pool; it supports a flexible and locked pool. Reward mechanics was inspired from [aurory-staking](https://auroryproject.medium.com/aurory-staking-d417dfdc32b5) and [ocked-flexible-aury-staking](https://auroryproject.medium.com/locked-flexible-aury-staking-30b7bacf1a1c).
 
-Try running some of the following tasks:
+### Mana
+The Mana token is a standard implementation of ERC20
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
-```
+# Deployments
+- ManaPool: 0xfbcA791a91D44Ab43bdfEdC7B20E27FE98D6514b
+- Mana Token: 0x7d2a09FFd4f2AB394d7Fe7e94e0E932d583e6164
+- xMana: 0x49FeD146c3372A66D1218c221A50Adf929711dD5
 
-# Etherscan verification
+### Build
+While in contracts directory, run: `npm install`. To run test, `npx hardhat test`
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
 
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/sample-script.ts
-```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
-
-# Performance optimizations
-
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+### TODOS
+- [] Add tests; increasing code coverage to 100%
