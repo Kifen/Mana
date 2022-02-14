@@ -9,10 +9,10 @@ This app runs on the Binance Smart Chain test network
 
 While in frontend package directory run:
 
-`$ npm install`
-`$ npm run start`
-
-Create file `.env.development.local` in project root and add the following:
+```
+$ npm install
+$ npm run start
+```
 
 ### Pre-requesites
 - Ensure metamsk is installed
